@@ -10,6 +10,8 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.HashMap;
+
 /**
  * An example SurfaceView for generating graphics on
  * @author Joel Ross
@@ -32,6 +34,16 @@ public class DrawingSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 
     public Ball ball; //public for easy access
 
+    public HashMap<Integer, Ball> touches;
+
+    public synchronized void addTouch(int pointerId, float x, float y) {
+        Ball newBall = new Ball(x, y, 100);
+        touches.put(pointerId, newBall);
+    }
+
+    public synchronized void removeTouch(int pointerId) {
+        touches.remove(pointerId);
+    }
 
     /**
      * We need to override all the constructors, since we don't know which will be called
@@ -69,6 +81,7 @@ public class DrawingSurfaceView extends SurfaceView implements SurfaceHolder.Cal
      */
     public void init(){
         //make ball
+        touches = new HashMap<>();
         ball = new Ball(viewWidth/2, viewHeight/2, 100);
     }
 

@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
 
     private var mDetector: GestureDetectorCompat? = null
 
+    private var activePointerId: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -40,12 +42,29 @@ class MainActivity : AppCompatActivity() {
         val gesture = mDetector!!.onTouchEvent(event) //ask the detector to handle instead
         //if(gesture) return true; //if we don't also want to handle
 
-        val x = event.x
-        val y = event.y - supportActionBar!!.height //closer to center...
+//        val x = event.x
+//        val y = event.y - supportActionBar!!.height //closer to center...
+
+        activePointerId = event.getPointerId(0)
+        // referenced docs
+        val (x: Float, y: Float) = event.findPointerIndex(activePointerId).let { pointerIndex ->
+            // Get the pointer's current position
+            activePointerId = MotionEventCompat.getPointerId(event, pointerIndex)
+            event.getX(pointerIndex) to event.getY(pointerIndex)
+        }
+
+        // logs if multitouch event occurs
+        if (event.pointerCount > 1) {
+            Log.d(TAG, "Multitouch event")
+
+        } else {
+            // Single touch event
+            Log.d(TAG, "Single touch event")
+        }
 
         val action = MotionEventCompat.getActionMasked(event)
         when (action) {
-            MotionEvent.ACTION_DOWN //put finger down
+            MotionEvent.ACTION_DOWN // put finger down
             -> {
                 //Log.v(TAG, "finger down");
 
@@ -57,6 +76,7 @@ class MainActivity : AppCompatActivity() {
                 val set = AnimatorSet()
                 set.playTogether(yAnim, xAnim)
                 set.start()
+                view!!.addTouch(activePointerId, x, y)
 
                 //                view.ball.cx = x;
                 //                view.ball.cy = y;
@@ -65,15 +85,31 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
             MotionEvent.ACTION_MOVE //move finger
-            ->
+            -> {
                 //Log.v(TAG, "finger move");
-                //                view.ball.cx = x;
-                //                view.ball.cy = y;
+
+                for (ball in view!!.touches.values) {
+                    view!!.ball.cx = x
+                    view!!.ball.cy = y
+                }
                 return true
+            }
             MotionEvent.ACTION_UP //lift finger up
                 , MotionEvent.ACTION_CANCEL //aborted gesture
                 , MotionEvent.ACTION_OUTSIDE //outside bounds
             -> return super.onTouchEvent(event)
+            MotionEvent.ACTION_POINTER_DOWN
+            -> {
+                view!!.addTouch(activePointerId, x, y)
+                Log.v(TAG, "subsequent finger down")
+                return true
+            }
+            MotionEvent.ACTION_POINTER_UP
+            -> {
+                view!!.removeTouch(activePointerId)
+                Log.v(TAG, "subsequent finger up")
+                return true
+            }
             else -> return super.onTouchEvent(event)
         }
     }
